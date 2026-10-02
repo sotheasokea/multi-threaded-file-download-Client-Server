@@ -61,6 +61,52 @@ while (true){
 + create thread so that when there's new request, client don't have to wait ( wait when all thread are busy)
 ```java
 ExecutorService pool = Executors.newFixedThreadPool(20);
+
+ServerSocket serverSocket = new ServerSocket(PORT);
+    System.out.println("Server listening on port "+PORT);
+
+    while (true){
+      Socket client = serverSocket.accept();
+      pool.submit(()-> handleClient(client));
+    }
 ```
 
 ---
+| Line | Purpose |
+|---|---|
+| `$c = New-Object System.Net.Sockets.TcpClient("localhost", 5050)` | Connects to your server. This is the moment your server's `accept()` returns. |
+| `$s = $c.GetStream()` | Gets the connection's byte pipe, the client-side equivalent of `getInputStream()` and `getOutputStream()`. |
+| `$w = New-Object System.IO.StreamWriter($s); $w.AutoFlush = $true` | Creates a writer for sending text. `AutoFlush` sends each line immediately, like the `flush()` in your server. |
+| `$r = New-Object System.IO.StreamReader($s)` | Creates a reader for text coming back. |
+| `$w.WriteLine("LIST")` | Sends the request line. Your server's `readLine()` receives this. |
+| `$r.ReadLine()` | Waits for the server's reply and prints it. |
+| `$c.Close()` | Closes the connection. Always do this so the server thread is released. |
+
++ handling request function
+
+```java
+static void handleClient(Socket client){
+    String name = Thread.currentThread().getName();
+    
+    try(
+      client;
+      BufferedReader in = new BufferedReader(
+        new InputStreamReader(
+          client.getInputStream(), StandardCharsets.UTF_8
+        )
+      );
+      OutputStream out = client.getOutputStream()
+    ){
+      String request = in.readLine();
+      if(request == null){
+        return;
+      }
+      System.out.println("["+name+"] request: "+ request);
+
+      out.write("ERROR 400 not implemented yet\n".getBytes(StandardCharsets.UTF_8));
+      out.flush();
+    } catch (IOException e){
+      System.err.println("Error: "+e.getMessage());
+    }
+  }
+```
