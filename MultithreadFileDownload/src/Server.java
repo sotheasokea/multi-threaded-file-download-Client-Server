@@ -1,16 +1,20 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.Buffer;
 import java.nio.charset.StandardCharsets;
+import java.util.RandomAccess;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server{
   static final int PORT = 5050;
+  static final String SHARED_DIR = "../../File_Container/shared";
 
   static void handleClient(Socket client){
     String name = Thread.currentThread().getName();
@@ -30,15 +34,83 @@ public class Server{
       }
       System.out.println("["+name+"] request: "+ request);
 
-      out.write("ERROR 400 not implemented yet\n".getBytes(StandardCharsets.UTF_8));
-      out.flush();
+      String[] parts = request.trim().split("\\s+");
+      String command = parts[0].toUpperCase();
+
+      switch (command) {
+          case "LIST":
+            File dir = new File(SHARED_DIR);
+            File[] files = dir.listFiles();
+            if (files != null && files.length > 0){
+              for (File f: files){
+                if(f.isFile()){
+                  sendLine(out, "File "+f.getName() + " " + f.length());
+                }
+              }
+            }else{
+              sendLine(out, "ERROR 404 No files available!");
+            }
+          break;
+          case "INFO":
+              if (parts.length != 2) {
+                sendLine(out, "ERROR 400 usage: INFO <filename>");
+              } else {
+                File infoFile = new File(SHARED_DIR, parts[1]);
+                if(infoFile.exists() && infoFile.isFile()){
+                  sendLine(out, "SIZE " + infoFile.length());
+                }else{
+                  sendLine(out, "ERROR 404 File not found!");
+                }
+              }
+          break;
+          case "GET":
+              if (parts.length != 4) {
+                  sendLine(out, "ERROR 400 usage: GET <filename> <offset> <length>");
+              } else {
+                String fileName = parts[1];
+                try {
+                  long offset = Long.parseLong(parts[2]);
+                  int length = Integer.parseInt(parts[3]);
+                  File getFile = new File(SHARED_DIR, fileName);
+                  if(!getFile.exists() || !getFile.isFile()){
+                    sendLine(out, "ERROR 400 File not found!");
+                  }else if((offset < 0) || (length <= 0) || (offset + length > getFile.length())){
+                    sendLine(out, "ERROR 400 Invalid offset or length range!");
+                  }else{
+                    try (RandomAccessFile raf = new RandomAccessFile(getFile, "r")){
+                      raf.seek(offset);
+                      byte[] buffer = new byte[length];
+                      int bytesRead = raf.read(buffer, 0, length);
+                      if(bytesRead > 0){
+                        out.write(buffer, 0, bytesRead);
+                        out.flush();
+                      }
+                    }
+                  }
+                } catch (NumberFormatException e) {
+                  sendLine(out, "ERROR 400 Offset and length must be integers!");
+                }
+                  sendLine(out, "OK GET received for " + parts[1]);
+              }
+          break;
+          default:
+              sendLine(out, "ERROR 400 unknown command");
+      }
     } catch (IOException e){
       System.err.println("Error: "+e.getMessage());
     }
   }
 
+  static void sendLine(OutputStream out, String line)throws IOException{
+    out.write((line + "\n").getBytes(StandardCharsets.UTF_8));
+    out.flush();
+  }
   public static void main(String[] args)throws Exception{
     ExecutorService pool = Executors.newFixedThreadPool(20);
+    File dir = new File(SHARED_DIR);
+    if (!dir.exists()) {
+        dir.mkdirs();
+    }
 
     ServerSocket serverSocket = new ServerSocket(PORT);
     System.out.println("Server listening on port "+PORT);
