@@ -1,5 +1,11 @@
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.Buffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -8,13 +14,27 @@ public class Server{
 
   static void handleClient(Socket client){
     String name = Thread.currentThread().getName();
-    System.out.println("["+name+"] start: "+client.getRemoteSocketAddress());
-    try {
-      Thread.sleep(5000); // just an ex. that this thread take 5000ms to finish
-    } catch (Exception e) {
-      System.err.println("Error: "+ e.getMessage());
+    
+    try(
+      client;
+      BufferedReader in = new BufferedReader(
+        new InputStreamReader(
+          client.getInputStream(), StandardCharsets.UTF_8
+        )
+      );
+      OutputStream out = client.getOutputStream()
+    ){
+      String request = in.readLine();
+      if(request == null){
+        return;
+      }
+      System.out.println("["+name+"] request: "+ request);
+
+      out.write("ERROR 400 not implemented yet\n".getBytes(StandardCharsets.UTF_8));
+      out.flush();
+    } catch (IOException e){
+      System.err.println("Error: "+e.getMessage());
     }
-    System.out.println("["+name+"] done!");
   }
 
   public static void main(String[] args)throws Exception{
@@ -26,8 +46,6 @@ public class Server{
     while (true){
       Socket client = serverSocket.accept();
       pool.submit(()-> handleClient(client));
-
-      client.close();
     }
 
     
