@@ -14,8 +14,6 @@
 
 ---
 
-# 1. Design the protocol 
-
 + creating port for network connection
 >
 **code**
@@ -82,7 +80,7 @@ ServerSocket serverSocket = new ServerSocket(PORT);
 | `$r.ReadLine()` | Waits for the server's reply and prints it. |
 | `$c.Close()` | Closes the connection. Always do this so the server thread is released. |
 
-+ handling request function
++ handleClient function
 
 ```java
 static void handleClient(Socket client){
@@ -110,3 +108,94 @@ static void handleClient(Socket client){
     }
   }
 ```
+
++ Edit handleClient Function again by replacing placeholder with the exact reponse
+
+```java
+static void handleClient(Socket client){
+    String name = Thread.currentThread().getName();
+    
+    try(
+      client;
+      BufferedReader in = new BufferedReader(
+        new InputStreamReader(
+          client.getInputStream(), StandardCharsets.UTF_8
+        )
+      );
+      OutputStream out = client.getOutputStream()
+    ){
+      String request = in.readLine();
+      if(request == null){
+        return;
+      }
+      System.out.println("["+name+"] request: "+ request);
+
+      String[] parts = request.trim().split("\\s+");
+      String command = parts[0].toUpperCase();
+
+      switch (command) {
+          case "LIST":
+            File dir = new File(SHARED_DIR);
+            File[] files = dir.listFiles();
+            if (files != null && files.length > 0){
+              for (File f: files){
+                if(f.isFile()){
+                  sendLine(out, "FILE_NAME: "+f.getName() + " , SIZE: " + f.length()+" bytes");
+                }
+              }
+            }else{
+              sendLine(out, "ERROR 404 No files available!");
+            }
+          break;
+          case "INFO":
+              if (parts.length != 2) {
+                sendLine(out, "ERROR 400 usage: INFO <filename>");
+              } else {
+                File infoFile = new File(SHARED_DIR, parts[1]);
+                if(infoFile.exists() && infoFile.isFile()){
+                  sendLine(out, "SIZE " + infoFile.length());
+                }else{
+                  sendLine(out, "ERROR 404 File not found!");
+                }
+              }
+          break;
+          case "GET":
+              if (parts.length != 4) {
+                  sendLine(out, "ERROR 400 usage: GET <filename> <offset> <length>");
+              } else {
+                String fileName = parts[1];
+                try {
+                  long offset = Long.parseLong(parts[2]);
+                  int length = Integer.parseInt(parts[3]);
+                  File getFile = new File(SHARED_DIR, fileName);
+                  if(!getFile.exists() || !getFile.isFile()){
+                    sendLine(out, "ERROR 400 File not found!");
+                  }else if((offset < 0) || (length <= 0) || (offset + length > getFile.length())){
+                    sendLine(out, "ERROR 400 Invalid offset or length range!");
+                  }else{
+                    try (RandomAccessFile raf = new RandomAccessFile(getFile, "r")){
+                      raf.seek(offset);
+                      byte[] buffer = new byte[length];
+                      int bytesRead = raf.read(buffer, 0, length);
+                      if(bytesRead > 0){
+                        out.write(buffer, 0, bytesRead);
+                        out.flush();
+                      }
+                    }
+                  }
+                } catch (NumberFormatException e) {
+                  sendLine(out, "ERROR 400 Offset and length must be integers!");
+                }
+                  sendLine(out, "OK GET received for " + parts[1]);
+              }
+          break;
+          default:
+              sendLine(out, "ERROR 400 unknown command");
+      }
+    } catch (IOException e){
+      System.err.println("Error: "+e.getMessage());
+    }
+  }
+  ```
+
++ instead of using command in Terminal create a TestServerSide.java file : [view code](MultithreadFileDownload\src\TestServerSide.java)
