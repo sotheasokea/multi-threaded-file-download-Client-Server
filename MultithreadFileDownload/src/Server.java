@@ -40,9 +40,13 @@ public class Server{
             File dir = new File(SHARED_DIR);
             File[] files = dir.listFiles();
             if (files != null && files.length > 0){
+              sendLine(out, String.format("%-30s %-12s", "File", "Size"));
+              sendLine(out, "------------------------------------------");
               for (File f: files){
                 if(f.isFile()){
-                  sendLine(out, "File: "+f.getName() + " , Size: " + formatFileSize(f.length()));
+                  sendLine(out, String.format("%-30s %-12s",
+                  f.getName(),
+                  formatFileSize(f.length())));
                 }
               }
             }else{
@@ -116,6 +120,10 @@ public class Server{
   static void sendLine(OutputStream out, String line)throws IOException{
     out.write((line + "\n").getBytes(StandardCharsets.UTF_8));
     out.flush();
+  }
+  
+  static String formatInfo(String label, String value) {
+    return String.format("%-12s : %s", label, value);
   }
   public static void main(String[] args)throws Exception{
     ExecutorService pool = Executors.newFixedThreadPool(20);
