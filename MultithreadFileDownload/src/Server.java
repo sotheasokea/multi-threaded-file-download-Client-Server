@@ -6,9 +6,7 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.Buffer;
 import java.nio.charset.StandardCharsets;
-import java.util.RandomAccess;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -120,6 +118,5 @@ public class Server{
       pool.submit(()-> handleClient(client));
     }
 
-    
   }
 }
