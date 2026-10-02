@@ -44,7 +44,7 @@ public class Server{
             if (files != null && files.length > 0){
               for (File f: files){
                 if(f.isFile()){
-                  sendLine(out, "File "+f.getName() + " " + f.length());
+                  sendLine(out, "FILE_NAME: "+f.getName() + " , SIZE: " + f.length()+" bytes");
                 }
               }
             }else{
