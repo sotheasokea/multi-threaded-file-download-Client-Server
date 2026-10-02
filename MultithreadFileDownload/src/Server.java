@@ -42,7 +42,7 @@ public class Server{
             if (files != null && files.length > 0){
               for (File f: files){
                 if(f.isFile()){
-                  sendLine(out, "FILE_NAME: "+f.getName() + " , SIZE: " + f.length()+" bytes");
+                  sendLine(out, "File: "+f.getName() + " , Size: " + formatFileSize(f.length()));
                 }
               }
             }else{
@@ -55,7 +55,7 @@ public class Server{
               } else {
                 File infoFile = new File(SHARED_DIR, parts[1]);
                 if(infoFile.exists() && infoFile.isFile()){
-                  sendLine(out, "SIZE " + infoFile.length());
+                  sendLine(out, "Size: " + formatFileSize(infoFile.length()));
                 }else{
                   sendLine(out, "ERROR 404 File not found!");
                 }
@@ -97,6 +97,20 @@ public class Server{
     } catch (IOException e){
       System.err.println("Error: "+e.getMessage());
     }
+  }
+
+  static String formatFileSize(long size) {
+    String[] units = {"B", "KB", "MB", "GB", "TB"};
+
+    double value = size;
+    int unitIndex = 0;
+
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex++;
+    }
+
+    return String.format("%.2f %s", value, units[unitIndex]);
   }
 
   static void sendLine(OutputStream out, String line)throws IOException{
