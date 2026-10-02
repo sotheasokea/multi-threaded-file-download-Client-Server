@@ -57,3 +57,10 @@ while (true){
     }
 ```
 ---
+
++ create thread so that when there's new request, client don't have to wait ( wait when all thread are busy)
+```java
+ExecutorService pool = Executors.newFixedThreadPool(20);
+```
+
+---
