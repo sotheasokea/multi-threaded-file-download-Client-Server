@@ -9,10 +9,11 @@ public class Server{
     ServerSocket serverSocket = new ServerSocket(PORT);
     System.out.println("Server listening on port "+PORT);
 
-    Socket client = serverSocket.accept();
-    System.out.println("Client connected: "+client.getRemoteSocketAddress());
+    while (true){
+      Socket client = serverSocket.accept();
+      System.out.println("Client connected: "+ client.getRemoteSocketAddress());
 
-    client.close();
-    serverSocket.close();
+      client.close();
+    }
   }
 }
