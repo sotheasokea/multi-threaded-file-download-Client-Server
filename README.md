@@ -76,9 +76,13 @@ ServerSocket serverSocket = new ServerSocket(PORT);
 | `$s = $c.GetStream()` | Gets the connection's byte pipe, the client-side equivalent of `getInputStream()` and `getOutputStream()`. |
 | `$w = New-Object System.IO.StreamWriter($s); $w.AutoFlush = $true` | Creates a writer for sending text. `AutoFlush` sends each line immediately, like the `flush()` in your server. |
 | `$r = New-Object System.IO.StreamReader($s)` | Creates a reader for text coming back. |
-| `$w.WriteLine("LIST")` | Sends the request line. Your server's `readLine()` receives this. |
-| `$r.ReadLine()` | Waits for the server's reply and prints it. |
+| `$w.WriteLine("LIST")`| Sends the request line. Your server's `readLine()` receives this. |
+| `$r.ReadLine()`| Waits for the server's reply and prints it. |
 | `$c.Close()` | Closes the connection. Always do this so the server thread is released. |
+
+> instead of use $r.ReadLine() : use `while (($line = $r.ReadLine()) -ne "END") {
+    $line
+}` to read more line
 
 + handleClient function
 
