@@ -619,3 +619,128 @@ java Server nio             (NIO accept)
 
 >`here we are editing in Server only, for client still use the same Tranditional mode to GET file..`
 
++ in Client Side: 2 ways to download using traditional | nio
+
+```java
+static void downloadRange(String fileName, Range r, String outputPath)throws IOException{
+    SocketChannel channel = null;
+    Socket socket;
+    if(mode.equals("nio")){
+      channel = SocketChannel.open(new InetSocketAddress(HOST, PORT));
+      socket  = channel.socket();
+    }else{
+      socket = new Socket(HOST, PORT);
+    }
+    try(
+      socket;
+      OutputStream out = socket.getOutputStream();
+      InputStream in = socket.getInputStream();
+
+      RandomAccessFile raf = new RandomAccessFile(outputPath, "rw")
+    ){
+      String request = "GET "+fileName+" "+r.offset + " "+ r.length + "\n";
+      out.write(request.getBytes(StandardCharsets.UTF_8));
+      out.flush();
+
+      String header = readHeaderLine(in);
+      if(header == null || !header.startsWith("OK ")){
+        throw new IOException("Server respond: "+header);
+      }
+      long expected = Long.parseLong(header.substring(3).trim());
+      if(expected != r.length){
+        throw new IOException("Asked for "+r.length+" bytes but server announced "+expected);
+      }
+
+      if(channel != null){
+        FileChannel fileChannel = raf.getChannel();
+        long position = r.offset;
+        long left = r.length;
+        while(left>0){
+          long received = fileChannel.transferFrom(channel, position, left);
+          if(received <= 0){
+            throw new IOException("Connection closed early, "+left+" bytes missing");
+          }
+          position += received;
+          left -= received;
+        }
+      }else{
+        raf.seek(r.offset);
+        byte[] buffer = new byte[64*1024];
+        long remaining = r.length;
+        while(remaining > 0){
+          int n = in.read(buffer, 0, (int)Math.min(buffer.length, remaining));
+          if(n == -1){
+            throw new EOFException("Connection closed early, "+remaining+" bytes missing");
+          }
+          raf.write(buffer, 0, n);
+          remaining -= n;
+        }
+      }
+    }
+  }
+```
+> `Use transferFrom() to transfer the file instead of reading bytes by bytes like traditional mode`
+
++ current main in client:
+
+```java
+public static void main(String[] args)throws IOException {
+
+    String fileName = args.length > 0 ? args[0] : "test.txt";
+
+    mode = args.length > 2 ? args[2].toLowerCase() : "traditional";
+
+    if(!mode.equals("traditional") && !mode.equals("nio")){
+      System.err.println("Usage: java Client <file> <original path> [traditional | nio]");
+      return;
+    }
+    System.out.println("Mode: "+mode);
+
+    askForFileList();
+
+    long size = getFileSize(fileName);
+    System.out.println("Size of "+fileName+" = "+size+" bytes");
+
+    /*
+    // testing file chunk
+    List<Range> ranges = calculateRange(size, WORKERS);
+    for (Range r : ranges){
+      System.out.println("Worker "+r.id+": offset="+r.offset+" length="+r.length+" (bytes "+ r.offset+" to "+(r.offset + r.length - 1) +")");
+    }
+    verifyRanges(ranges, size);
+    */
+
+    /*
+    String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
+    prepareOutputFile(outputPath, size);
+
+    // download the whole file = 1 range
+    Range whole = new Range(0, 0, size);
+    downloadRange(fileName, whole, outputPath);
+    System.out.println("Downloaded to " + outputPath);
+    */
+
+    String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
+    prepareOutputFile(outputPath, size);
+
+    List<Range> ranges = calculateRange(size,1);
+    // for (Range r : ranges){
+    //   System.out.println("Worker "+r.id+": offset="+r.offset+" length="+r.length+" (bytes "+ r.offset+" to "+(r.offset + r.length - 1) +")");
+    // }
+    verifyRanges(ranges, size);
+
+    try {
+      long start = System.nanoTime();
+      downloadParallel(fileName, ranges, outputPath);
+      double seconds = (System.nanoTime() - start)/ 1e9;
+      System.out.printf("Downloaded in %.3f s (%.2f MB/s)%n", seconds, size / (1024.0 * 1024.0) / seconds);
+      verifyDownload(outputPath, size, args.length > 1 ? args[1] : null);
+    } catch (Exception e) {
+      System.err.println("Download failed....!");
+    }
+
+  }
+```
+
+----
+
