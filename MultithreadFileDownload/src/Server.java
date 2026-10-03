@@ -85,12 +85,18 @@ public class Server{
                   }else{
                     try (RandomAccessFile raf = new RandomAccessFile(getFile, "r")){
                       raf.seek(offset);
-                      byte[] buffer = new byte[length];
-                      int bytesRead = raf.read(buffer, 0, length);
-                      if(bytesRead > 0){
+                      sendLine(out, "OK " + length);
+                      byte[] buffer = new byte[64*1024];
+                      int remaining = length;
+                      while (remaining > 0) {
+                        int bytesRead = raf.read(buffer, 0, Math.min(buffer.length, remaining));
+                        if (bytesRead == -1) {
+                          break;
+                        }
                         out.write(buffer, 0, bytesRead);
-                        out.flush();
+                        remaining -= bytesRead;
                       }
+                      out.flush();
                     }
                   }
                 } catch (NumberFormatException e) {
@@ -128,6 +134,17 @@ public class Server{
   static String formatInfo(String label, String value) {
     return String.format("%-12s : %s", label, value);
   }
+  
+  // not used
+  static File resolveSafe(String name)throws IOException{
+    File root = new File(SHARED_DIR).getCanonicalFile();
+    File file = new File(root, name).getCanonicalFile();
+    if(!file.toPath().startsWith(root.toPath())){
+      return null;
+    }
+    return file;
+  }
+  
   public static void main(String[] args)throws Exception{
     ExecutorService pool = Executors.newFixedThreadPool(20);
     File dir = new File(SHARED_DIR);
