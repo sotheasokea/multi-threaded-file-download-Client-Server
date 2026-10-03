@@ -456,4 +456,49 @@ static void downloadParallel(String fileName, List<Range> ranges, String outputP
 
 ----
 
++ addedd method to check if file is identical : 
+
+```java
+  static String sha256(String path)throws Exception{
+    MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+    try(
+      InputStream in = new FileInputStream(path)
+    ){
+      byte[] buf = new byte[64*1024];
+      int n;
+      while((n = in.read(buf)) != -1){
+        md.update(buf, 0, n);
+      }
+    }
+    StringBuilder sb = new StringBuilder();
+    for(byte b : md.digest()){
+      sb.append(String.format("%02x", b));
+    }
+    return sb.toString();
+  }
+
+  static void verifyDownload(String outputPath, long expectatedSize, String originalPath)throws Exception{
+    long actual = new File(outputPath).length();
+    System.out.println("Size check: " + (actual == expectatedSize ? "OK" : "MISMATCH ("+actual+")"));
+
+    String hash = sha256(outputPath);
+    System.out.println("SHA-256 of download: "+hash);
+
+    if(originalPath != null){
+      String original = sha256(originalPath);
+      System.out.println("Hash check: "+(hash.equals(original) ? "OK (identical to original)" : "MISMATCH"));
+    }
+
+  }
+```
+
++ run this command to check
+
+```command
+java Client BigFile.zip ../../File_Container/shared/BigFile.zip
+```
+
+----
+
 
