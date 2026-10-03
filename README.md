@@ -506,3 +506,59 @@ java Client BigFile.zip ../../File_Container/shared/BigFile.zip
 
 `adding NIO mode transfer into the existed server, with some change as mentioned here: `
 
++ adding mode so that we can choose when run the Server
+```java
+  static void acceptTraditional(ExecutorService pool)throws IOException{
+    ServerSocket serverSocket = new ServerSocket(PORT);
+    System.out.println("Server listening on port "+PORT);
+    while(true){
+      Socket client = serverSocket.accept();
+      pool.submit(()-> handleClient(client));
+    }
+  }
+
+  static void acceptNio(ExecutorService pool)throws IOException{
+    ServerSocketChannel serverChannel = ServerSocketChannel.open();
+    serverChannel.bind(new InetSocketAddress(PORT));
+    System.out.println("Server listening on port "+ PORT + " (NIO accept)");
+
+    while(true){
+      SocketChannel channel = serverChannel.accept();
+      pool.submit(()-> handleClient(channel.socket()));
+    }
+  }
+```
++ current main:
+```java
+  public static void main(String[] args)throws Exception{
+    ExecutorService pool = Executors.newFixedThreadPool(20);
+    File dir = new File(SHARED_DIR);
+    if (!dir.exists()) {
+        dir.mkdirs();
+    }
+
+    String mode = args.length > 0 ? args[0].toLowerCase() : "traditional";
+    if(!mode.equals("traditional") && !mode.equals("nio")){
+      System.err.println("Usage: Java Server [traditional | nio]");
+      return;
+    }
+
+    System.out.println("Mode: "+mode);
+    if(mode.equals("nio")){
+      acceptNio(pool);
+    }else{
+      acceptTraditional(pool);
+    }
+  }
+```
+----
++ to run the server
+```command
+javac Server.java
+java Server                 (traditional)
+java Server nio             (NIO accept)
+```
+>`defualt: traditional, nio = nio mode, else error`
+
+----
+
