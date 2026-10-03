@@ -9,6 +9,7 @@ import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.*;
 
 public class Client {
   static final String HOST = "localhost";
@@ -164,6 +165,31 @@ public class Client {
     }
   }
 
+  static void downloadParallel(String fileName, List<Range> ranges, String outputPath)throws Exception{
+    ExecutorService pool = Executors.newFixedThreadPool(WORKERS);
+    List<Future<?>> futures = new ArrayList<>();
+
+    for(Range r : ranges){
+      futures.add(pool.submit(() ->{
+        try {
+          downloadRange(fileName, r, outputPath);
+          System.out.println("Worker " + r.id + " finished!");
+        } catch (IOException e) {
+          throw new RuntimeException("Worker " + r.id + " failed to download", e);
+        }
+      }));
+    }
+    try{
+      for (Future<?> f : futures){
+        // waits for this worker; rethrows its error if it failed
+        f.get();
+      }
+    }finally{
+      pool.shutdown();
+    }
+
+  }
+
   public static void main(String[] args)throws IOException {
 
     String fileName = args.length > 0 ? args[0] : "test.txt";
@@ -182,6 +208,7 @@ public class Client {
     verifyRanges(ranges, size);
     */
 
+    /*
     String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
     prepareOutputFile(outputPath, size);
 
@@ -189,6 +216,22 @@ public class Client {
     Range whole = new Range(0, 0, size);
     downloadRange(fileName, whole, outputPath);
     System.out.println("Downloaded to " + outputPath);
+    */
+
+    String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
+    prepareOutputFile(outputPath, size);
+
+    List<Range> ranges = calculateRange(size, WORKERS);
+    verifyRanges(ranges, size);
+
+    try {
+      long start = System.nanoTime();
+      downloadParallel(fileName, ranges, outputPath);
+      double seconds = (System.nanoTime() - start)/ 1e9;
+      System.out.printf("Downloaded in %.3f s (%.2f MB/s)%n", seconds, size / (1024.0 * 1024.0) / seconds);
+    } catch (Exception e) {
+      System.err.println("Download failed....!");
+    }
 
   }
 
