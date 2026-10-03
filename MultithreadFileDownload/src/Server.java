@@ -4,11 +4,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+//adding for nio mode
+import java.nio.channels.*;
 
 public class Server{
   static final int PORT = 5050;
@@ -145,6 +148,29 @@ public class Server{
     return file;
   }
   
+
+  // this is when we are adding nio into server
+  static void acceptTraditional(ExecutorService pool)throws IOException{
+    ServerSocket serverSocket = new ServerSocket(PORT);
+    System.out.println("Server listening on port "+PORT);
+    while(true){
+      Socket client = serverSocket.accept();
+      pool.submit(()-> handleClient(client));
+    }
+  }
+
+  static void acceptNio(ExecutorService pool)throws IOException{
+    ServerSocketChannel serverChannel = ServerSocketChannel.open();
+    serverChannel.bind(new InetSocketAddress(PORT));
+    System.out.println("Server listening on port "+ PORT + " (NIO accept)");
+
+    while(true){
+      SocketChannel channel = serverChannel.accept();
+      pool.submit(()-> handleClient(channel.socket()));
+    }
+  }
+
+
   public static void main(String[] args)throws Exception{
     ExecutorService pool = Executors.newFixedThreadPool(20);
     File dir = new File(SHARED_DIR);
@@ -152,13 +178,17 @@ public class Server{
         dir.mkdirs();
     }
 
-    ServerSocket serverSocket = new ServerSocket(PORT);
-    System.out.println("Server listening on port "+PORT);
-
-    while (true){
-      Socket client = serverSocket.accept();
-      pool.submit(()-> handleClient(client));
+    String mode = args.length > 0 ? args[0].toLowerCase() : "traditional";
+    if(!mode.equals("traditional") && !mode.equals("nio")){
+      System.err.println("Usage: Java Server [traditional | nio]");
+      return;
     }
 
+    System.out.println("Mode: "+mode);
+    if(mode.equals("nio")){
+      acceptNio(pool);
+    }else{
+      acceptTraditional(pool);
+    }
   }
 }
