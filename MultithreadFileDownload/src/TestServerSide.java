@@ -8,16 +8,13 @@ public class TestServerSide {
     public static void main(String[] args) {
         System.out.println("--- Starting Tests ---");
         
-        // 1. Test LIST command
         testTextCommand("LIST");
-        
-        // 2. Test INFO command
         testTextCommand("INFO test.txt");
-        
-        // 3. Test GET command (Fetching the first 10 bytes)
-        testGetCommand("test.txt", 0, 100); 
-
-        testGetCommand("test.txt", -2, 100); 
+        testGetCommand("test.txt", 0, 5);     // should give OK 5
+        testGetCommand("BigFile.zip", 0, 100_000);  
+        testGetCommand("test.txt", 3, 4);     // a range in the middle
+        testGetCommand("test.txt", -2, 100);  // should give ERROR 416...
+        testGetCommand("nothing.txt", 0, 5);  // should give ERROR 404...
     }
 
     static void testTextCommand(String command) {
@@ -40,26 +37,46 @@ public class TestServerSide {
         }
     }
 
+    static String readHeaderLine(InputStream in) throws Exception {
+    StringBuilder sb = new StringBuilder();
+    int b;
+    while ((b = in.read()) != -1) {
+        if (b == '\n') {
+            return sb.toString().trim();
+        }
+        sb.append((char) b);
+    }
+    return sb.length() == 0 ? null : sb.toString().trim();
+}
+
     static void testGetCommand(String filename, int offset, int length) {
         try (Socket socket = new Socket("localhost", 5050);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             InputStream in = socket.getInputStream()) {
-             
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            InputStream in = socket.getInputStream()) {
+
             String command = "GET " + filename + " " + offset + " " + length;
             System.out.println("Sending: " + command);
             out.println(command);
-            
-            byte[] buffer = new byte[length];
-            int bytesRead = in.read(buffer);
-            
-            if (bytesRead > 0) {
-                String payload = new String(buffer, 0, bytesRead);
-                System.out.println("Received Payload: " + payload);
+
+            String header = readHeaderLine(in);
+            System.out.println("Header: " + header);
+
+            if (header != null && header.startsWith("OK ")) {
+                int expected = Integer.parseInt(header.substring(3));
+                byte[] payload = in.readNBytes(expected);
+                System.out.println("Expected " + expected + " bytes, received " + payload.length);
+                System.out.println("Payload: " + new String(payload, java.nio.charset.StandardCharsets.UTF_8));
+
+                if (in.read() == -1) {
+                    System.out.println("No extra bytes after payload (good)");
+                } else {
+                    System.out.println("WARNING: server sent extra bytes after the payload");
+                }
             } else {
-                System.out.println("No payload received or error occurred.");
+                System.out.println("Server returned an error, so no payload.");
             }
             System.out.println("-------------------------");
-            
+
         } catch (Exception e) {
             System.err.println("Test Failed: " + e.getMessage());
         }
