@@ -16,6 +16,8 @@ public class TestServerSide {
         
         // 3. Test GET command (Fetching the first 10 bytes)
         testGetCommand("test.txt", 0, 100); 
+
+        testGetCommand("test.txt", -2, 100); 
     }
 
     static void testTextCommand(String command) {
