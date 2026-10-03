@@ -90,17 +90,33 @@ public class Server{
                     try (RandomAccessFile raf = new RandomAccessFile(getFile, "r")){
                       raf.seek(offset);
                       sendLine(out, "OK " + length);
-                      byte[] buffer = new byte[64*1024];
-                      int remaining = length;
-                      while (remaining > 0) {
-                        int bytesRead = raf.read(buffer, 0, Math.min(buffer.length, remaining));
-                        if (bytesRead == -1) {
-                          break;
+
+                      if(mode.equals("nio")){
+                        FileChannel fileChannel = raf.getChannel();
+                        SocketChannel socketChannel = client.getChannel();
+                        long position = offset;
+                        long left = length;
+                        while (left > 0) {
+                          long sent = fileChannel.transferTo(position, left, socketChannel);
+                          if(sent <= 0){
+                            break;
+                          }
+                          position += sent;
+                          left -= sent;
                         }
-                        out.write(buffer, 0, bytesRead);
-                        remaining -= bytesRead;
+                      }else{
+                        byte[] buffer = new byte[64*1024];
+                        int remaining = length;
+                        while (remaining > 0) {
+                          int bytesRead = raf.read(buffer, 0, Math.min(buffer.length, remaining));
+                          if (bytesRead == -1) {
+                            break;
+                          }
+                          out.write(buffer, 0, bytesRead);
+                          remaining -= bytesRead;
+                        }
+                        out.flush();
                       }
-                      out.flush();
                     }
                   }
                 } catch (NumberFormatException e) {
