@@ -499,6 +499,10 @@ static void downloadParallel(String fileName, List<Range> ranges, String outputP
 java Client BigFile.zip ../../File_Container/shared/BigFile.zip
 ```
 
-----
 
+
+----
+# Add NIO native transfer to Server
+
+`adding NIO mode transfer into the existed server, with some change as mentioned here: `
 
