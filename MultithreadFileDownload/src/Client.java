@@ -7,15 +7,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
 import java.security.MessageDigest;
+// for nio mode
+import java.nio.channels.*;
 
 public class Client {
   static final String HOST = "localhost";
   static final int PORT = 5050;
+  static String mode = "traditional";
   static final int WORKERS = 10;
 
   static class Range{
@@ -138,8 +142,16 @@ public class Client {
 
   //- worker method
   static void downloadRange(String fileName, Range r, String outputPath)throws IOException{
+    SocketChannel channel = null;
+    Socket socket;
+    if(mode.equals("nio")){
+      channel = SocketChannel.open(new InetSocketAddress(HOST, PORT));
+      socket  = channel.socket();
+    }else{
+      socket = new Socket(HOST, PORT);
+    }
     try(
-      Socket socket = new Socket(HOST, PORT);
+      socket;
       OutputStream out = socket.getOutputStream();
       InputStream in = socket.getInputStream();
 
@@ -153,16 +165,35 @@ public class Client {
       if(header == null || !header.startsWith("OK ")){
         throw new IOException("Server respond: "+header);
       }
-      raf.seek(r.offset);
-      byte[] buffer = new byte[64*1024];
-      long remaining = r.length;
-      while(remaining > 0){
-        int n = in.read(buffer, 0, (int)Math.min(buffer.length, remaining));
-        if(n == -1){
-          throw new EOFException("Connection closed early, "+remaining+" bytes missing");
+      long expected = Long.parseLong(header.substring(3).trim());
+      if(expected != r.length){
+        throw new IOException("Asked for "+r.length+" bytes but server announced "+expected);
+      }
+
+      if(channel != null){
+        FileChannel fileChannel = raf.getChannel();
+        long position = r.offset;
+        long left = r.length;
+        while(left>0){
+          long received = fileChannel.transferFrom(channel, position, left);
+          if(received <= 0){
+            throw new IOException("Connection closed early, "+left+" bytes missing");
+          }
+          position += received;
+          left -= received;
         }
-        raf.write(buffer, 0, n);
-        remaining -= n;
+      }else{
+        raf.seek(r.offset);
+        byte[] buffer = new byte[64*1024];
+        long remaining = r.length;
+        while(remaining > 0){
+          int n = in.read(buffer, 0, (int)Math.min(buffer.length, remaining));
+          if(n == -1){
+            throw new EOFException("Connection closed early, "+remaining+" bytes missing");
+          }
+          raf.write(buffer, 0, n);
+          remaining -= n;
+        }
       }
     }
   }
@@ -229,6 +260,14 @@ public class Client {
 
     String fileName = args.length > 0 ? args[0] : "test.txt";
 
+    mode = args.length > 2 ? args[2].toLowerCase() : "traditional";
+
+    if(!mode.equals("traditional") && !mode.equals("nio")){
+      System.err.println("Usage: java Client <file> <original path> [traditional | nio]");
+      return;
+    }
+    System.out.println("Mode: "+mode);
+
     askForFileList();
 
     long size = getFileSize(fileName);
@@ -256,7 +295,7 @@ public class Client {
     String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
     prepareOutputFile(outputPath, size);
 
-    List<Range> ranges = calculateRange(size,WORKERS);
+    List<Range> ranges = calculateRange(size,1);
     // for (Range r : ranges){
     //   System.out.println("Worker "+r.id+": offset="+r.offset+" length="+r.length+" (bytes "+ r.offset+" to "+(r.offset + r.length - 1) +")");
     // }
