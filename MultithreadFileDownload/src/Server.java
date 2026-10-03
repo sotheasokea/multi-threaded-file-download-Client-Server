@@ -16,6 +16,7 @@ public class Server{
 
   static void handleClient(Socket client){
     String name = Thread.currentThread().getName();
+    System.out.println("[" + name + "] connected: " + client.getRemoteSocketAddress());
     
     try(
       client;
@@ -40,15 +41,17 @@ public class Server{
             File dir = new File(SHARED_DIR);
             File[] files = dir.listFiles();
             if (files != null && files.length > 0){
-              sendLine(out, String.format("%-30s %-12s", "File", "Size"));
-              sendLine(out, "------------------------------------------");
+              // sendLine(out, String.format("%-30s %-12s", "File", "Size"));
+              // sendLine(out, "------------------------------------------");
               for (File f: files){
                 if(f.isFile()){
-                  sendLine(out, String.format("%-30s %-12s",
-                  f.getName(),
-                  formatFileSize(f.length())));
+                  // sendLine(out, String.format("%-30s %-12s",
+                  // f.getName(),
+                  // formatFileSize(f.length())));
+                  sendLine(out, "FILE " + f.getName() + " " + f.length());
                 }
               }
+              sendLine(out, "END");
             }else{
               sendLine(out, "ERROR 404 No files available!");
             }
@@ -59,7 +62,8 @@ public class Server{
               } else {
                 File infoFile = new File(SHARED_DIR, parts[1]);
                 if(infoFile.exists() && infoFile.isFile()){
-                  sendLine(out, "Size: " + formatFileSize(infoFile.length()));
+                  // sendLine(out, "Size: " + formatFileSize(infoFile.length()));
+                  sendLine(out, "SIZE " + infoFile.length());
                 }else{
                   sendLine(out, "ERROR 404 File not found!");
                 }
@@ -92,7 +96,6 @@ public class Server{
                 } catch (NumberFormatException e) {
                   sendLine(out, "ERROR 400 Offset and length must be integers!");
                 }
-                  sendLine(out, "OK GET received for " + parts[1]);
               }
           break;
           default:
