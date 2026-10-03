@@ -562,3 +562,60 @@ java Server nio             (NIO accept)
 
 ----
 
++ use `transferTo` for nio:
+```java
+  case "GET":
+    if (parts.length != 4) {
+        sendLine(out, "ERROR 400 usage: GET <filename> <offset> <length>");
+    } else {
+      String fileName = parts[1];
+      try {
+        long offset = Long.parseLong(parts[2]);
+        int length = Integer.parseInt(parts[3]);
+        File getFile = new File(SHARED_DIR, fileName);
+        if(!getFile.exists() || !getFile.isFile()){
+          sendLine(out, "ERROR 400 File not found!");
+        }else if((offset < 0) || (length <= 0) || (offset + length > getFile.length())){
+          sendLine(out, "ERROR 400 Invalid offset or length range!");
+        }else{
+          try (RandomAccessFile raf = new RandomAccessFile(getFile, "r")){
+            raf.seek(offset);
+            sendLine(out, "OK " + length);
+
+            if(mode.equals("nio")){
+              FileChannel fileChannel = raf.getChannel();
+              SocketChannel socketChannel = client.getChannel();
+              long position = offset;
+              long left = length;
+              while (left > 0) {
+                long sent = fileChannel.transferTo(position, left, socketChannel);
+                if(sent <= 0){
+                  break;
+                }
+                position += sent;
+                left -= sent;
+              }
+            }else{
+              byte[] buffer = new byte[64*1024];
+              int remaining = length;
+              while (remaining > 0) {
+                int bytesRead = raf.read(buffer, 0, Math.min(buffer.length, remaining));
+                if (bytesRead == -1) {
+                  break;
+                }
+                out.write(buffer, 0, bytesRead);
+                remaining -= bytesRead;
+              }
+              out.flush();
+            }
+          }
+        }
+      } catch (NumberFormatException e) {
+        sendLine(out, "ERROR 400 Offset and length must be integers!");
+      }
+    }
+  break;
+```
+
+>`here we are editing in Server only, for client still use the same Tranditional mode to GET file..`
+
