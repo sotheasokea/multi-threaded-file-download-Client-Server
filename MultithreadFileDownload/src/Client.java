@@ -1,7 +1,11 @@
 import java.io.BufferedReader;
+import java.io.EOFException;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -105,6 +109,61 @@ public class Client {
       throw new IOException("Server respond: "+line);
     }
   }
+  
+  // for download operation
+  static String readHeaderLine(InputStream in)throws IOException{
+    StringBuilder sb = new StringBuilder();
+    int b;
+    while ((b = in.read()) != 1){
+      if(b == '\n'){
+        return sb.toString().trim();
+      }
+      sb.append((char) b);
+    }
+    return sb.length() == 0? null : sb.toString().trim();
+  }
+  
+  static void prepareOutputFile(String path, long size)throws IOException{
+    File file = new File(path);
+    file.getParentFile().mkdir();
+    try(
+      RandomAccessFile raf = new RandomAccessFile(file, "rw")
+    ){
+      raf.setLength(size);
+    }
+  }
+
+  //- worker method
+  static void downloadRange(String fileName, Range r, String outputPath)throws IOException{
+    try(
+      Socket socket = new Socket(HOST, PORT);
+      OutputStream out = socket.getOutputStream();
+      InputStream in = socket.getInputStream();
+
+      RandomAccessFile raf = new RandomAccessFile(outputPath, "rw")
+    ){
+      String request = "GET "+fileName+" "+r.offset + " "+ r.length + "\n";
+      out.write(request.getBytes(StandardCharsets.UTF_8));
+      out.flush();
+
+      String header = readHeaderLine(in);
+      if(header == null || !header.startsWith("OK ")){
+        throw new IOException("Server respond: "+header);
+      }
+      raf.seek(r.offset);
+      byte[] buffer = new byte[64*1024];
+      long remaining = r.length;
+      while(remaining > 0){
+        int n = in.read(buffer, 0, (int)Math.min(buffer.length, remaining));
+        if(n == -1){
+          throw new EOFException("Connection closed early, "+remaining+" bytes missing");
+        }
+        raf.write(buffer, 0, n);
+        remaining -= n;
+      }
+    }
+  }
+
   public static void main(String[] args)throws IOException {
 
     String fileName = args.length > 0 ? args[0] : "test.txt";
@@ -114,12 +173,22 @@ public class Client {
     long size = getFileSize(fileName);
     System.out.println("Size of "+fileName+" = "+size+" bytes");
 
-
+    /*
+    // testing file chunk
     List<Range> ranges = calculateRange(size, WORKERS);
     for (Range r : ranges){
       System.out.println("Worker "+r.id+": offset="+r.offset+" length="+r.length+" (bytes "+ r.offset+" to "+(r.offset + r.length - 1) +")");
     }
     verifyRanges(ranges, size);
+    */
+
+    String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
+    prepareOutputFile(outputPath, size);
+
+    // download the whole file = 1 range
+    Range whole = new Range(0, 0, size);
+    downloadRange(fileName, whole, outputPath);
+    System.out.println("Downloaded to " + outputPath);
 
   }
 
