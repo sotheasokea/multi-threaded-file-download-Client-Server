@@ -15,6 +15,7 @@ import java.nio.channels.*;
 
 public class Server{
   static final int PORT = 5050;
+  static String mode = "traditional";
   static final String SHARED_DIR = "../../File_Container/shared";
 
   static void handleClient(Socket client){
@@ -178,7 +179,7 @@ public class Server{
         dir.mkdirs();
     }
 
-    String mode = args.length > 0 ? args[0].toLowerCase() : "traditional";
+    mode = args.length > 0 ? args[0].toLowerCase() : "traditional";
     if(!mode.equals("traditional") && !mode.equals("nio")){
       System.err.println("Usage: Java Server [traditional | nio]");
       return;
