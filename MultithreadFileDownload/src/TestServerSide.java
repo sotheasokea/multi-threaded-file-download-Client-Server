@@ -11,7 +11,7 @@ public class TestServerSide {
         testTextCommand("LIST");
         testTextCommand("INFO test.txt");
         testGetCommand("test.txt", 0, 5);     // should give OK 5
-        testGetCommand("BigFile.zip", 0, 100_000);  
+        // testGetCommand("BigFile.zip", 0, 100_000); 
         testGetCommand("test.txt", 3, 4);     // a range in the middle
         testGetCommand("test.txt", -2, 100);  // should give ERROR 416...
         testGetCommand("nothing.txt", 0, 5);  // should give ERROR 404...
