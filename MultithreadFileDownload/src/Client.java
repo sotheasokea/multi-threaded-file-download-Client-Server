@@ -11,7 +11,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
-import java.security.MessageDigest;;
+import java.security.MessageDigest;
 
 public class Client {
   static final String HOST = "localhost";
