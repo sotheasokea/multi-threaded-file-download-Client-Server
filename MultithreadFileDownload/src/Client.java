@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -10,6 +11,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
+import java.security.MessageDigest;;
 
 public class Client {
   static final String HOST = "localhost";
@@ -190,6 +192,39 @@ public class Client {
 
   }
 
+  static String sha256(String path)throws Exception{
+    MessageDigest md = MessageDigest.getInstance("SHA-256");
+
+    try(
+      InputStream in = new FileInputStream(path)
+    ){
+      byte[] buf = new byte[64*1024];
+      int n;
+      while((n = in.read(buf)) != -1){
+        md.update(buf, 0, n);
+      }
+    }
+    StringBuilder sb = new StringBuilder();
+    for(byte b : md.digest()){
+      sb.append(String.format("%02x", b));
+    }
+    return sb.toString();
+  }
+
+  static void verifyDownload(String outputPath, long expectatedSize, String originalPath)throws Exception{
+    long actual = new File(outputPath).length();
+    System.out.println("Size check: " + (actual == expectatedSize ? "OK" : "MISMATCH ("+actual+")"));
+
+    String hash = sha256(outputPath);
+    System.out.println("SHA-256 of download: "+hash);
+
+    if(originalPath != null){
+      String original = sha256(originalPath);
+      System.out.println("Hash check: "+(hash.equals(original) ? "OK (identical to original)" : "MISMATCH"));
+    }
+
+  }
+
   public static void main(String[] args)throws IOException {
 
     String fileName = args.length > 0 ? args[0] : "test.txt";
@@ -229,6 +264,7 @@ public class Client {
       downloadParallel(fileName, ranges, outputPath);
       double seconds = (System.nanoTime() - start)/ 1e9;
       System.out.printf("Downloaded in %.3f s (%.2f MB/s)%n", seconds, size / (1024.0 * 1024.0) / seconds);
+      verifyDownload(outputPath, size, args.length > 1 ? args[1] : null);
     } catch (Exception e) {
       System.err.println("Download failed....!");
     }
