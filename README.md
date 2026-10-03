@@ -259,3 +259,45 @@ public class Client {
 ```
 
 >`the client will get the file list from the shared folder`
+
+**add INFO request**
+```java
+static long getFileSize(String fileName)throws IOException{
+    try(
+      Socket socket = new Socket(HOST, PORT);
+      OutputStream out = socket.getOutputStream();
+      BufferedReader in = new BufferedReader(
+        new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8)
+      )
+    ){
+      out.write(("INFO "+fileName+"\n").getBytes(StandardCharsets.UTF_8));
+      out.flush();
+
+      String line = in.readLine();
+      if(line == null){
+        throw new IOException("Server closed the connection without replying");
+      }
+      if(line.startsWith("SIZE ")){
+        return Long.parseLong(line.substring(5).trim());
+      }
+      throw new IOException("Server respond: "+line);
+    }
+  }
+  public static void main(String[] args)throws IOException {
+
+    String fileName = args.length > 0 ? args[0] : "test.txt";
+
+    askForFileList();
+
+    long size = getFileSize(fileName);
+    System.out.println("Size of "+fileName+" = "+size+" bytes");
+  }
+```
+`use this command to test this part after run the server`
+
+```command
+javac Client.java
+java Client
+java Client BigFile.zip
+java Client nothing.txt
+```
