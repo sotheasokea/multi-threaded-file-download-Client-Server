@@ -260,7 +260,7 @@ public class Client {
 
     String fileName = args.length > 0 ? args[0] : "test.txt";
 
-    mode = args.length > 3 ? args[3].toLowerCase() : "traditional";
+    mode = args.length > 2 ? args[2].toLowerCase() : "traditional";
 
     if(!mode.equals("traditional") && !mode.equals("nio")){
       System.err.println("Usage: java Client <file> <original path> [traditional | nio]");
@@ -277,7 +277,7 @@ public class Client {
     String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
     prepareOutputFile(outputPath, size);
 
-    int workers = args.length > 2 ? Integer.parseInt(args[2]) : WORKERS;
+    int workers = args.length > 3 ? Integer.parseInt(args[3]) : WORKERS;
 
     List<Range> ranges = calculateRange(size,workers);
     // for (Range r : ranges){
