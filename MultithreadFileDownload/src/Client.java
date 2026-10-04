@@ -295,7 +295,7 @@ public class Client {
     String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
     prepareOutputFile(outputPath, size);
 
-    List<Range> ranges = calculateRange(size,1);
+    List<Range> ranges = calculateRange(size,WORKERS);
     // for (Range r : ranges){
     //   System.out.println("Worker "+r.id+": offset="+r.offset+" length="+r.length+" (bytes "+ r.offset+" to "+(r.offset + r.length - 1) +")");
     // }
