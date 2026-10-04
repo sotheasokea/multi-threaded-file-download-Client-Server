@@ -308,7 +308,7 @@ public class Client {
       System.out.printf("Downloaded in %.3f s (%.2f MB/s)%n", seconds, size / (1024.0 * 1024.0) / seconds);
       verifyDownload(outputPath, size, args.length > 1 ? args[1] : null);
     } catch (Exception e) {
-      System.err.println("Download failed....!");
+      System.err.println("Download failed: "+e);
     }
 
   }
