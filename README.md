@@ -16,11 +16,15 @@ Assignment2/
 ├── File_Container/
 │   ├── shared/                  <- files the server offers (put your test files here)
 │   └── downloaded_file/         <- where the client saves downloads (created automatically)
-└── MultithreadFileDownload/
-    └── src/
-        ├── Server.java
-        ├── Client.java
-        └── TestServerSide.java  <- small program to test the server by hand
+├── MultithreadFileDownload/
+│   └── src/
+│       ├── Server.java
+│       ├── Client.java
+│       └── TestServerSide.java  <- small program to test the server by hand
+├── .gitignore                   <- files and folders Git should not track
+├── Assignment_Multithread_File_Download.pdf   <- the assignment description
+├── ProjectTracking.md           <- notes tracking the progress of the project
+└── README.md                    <- this file: how to run and use the project
 ```
 
 | File | Purpose |
