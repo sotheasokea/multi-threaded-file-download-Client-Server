@@ -121,7 +121,7 @@ public class Client {
   static String readHeaderLine(InputStream in)throws IOException{
     StringBuilder sb = new StringBuilder();
     int b;
-    while ((b = in.read()) != 1){
+    while ((b = in.read()) != -1){
       if(b == '\n'){
         return sb.toString().trim();
       }
@@ -260,7 +260,7 @@ public class Client {
 
     String fileName = args.length > 0 ? args[0] : "test.txt";
 
-    mode = args.length > 2 ? args[2].toLowerCase() : "traditional";
+    mode = args.length > 3 ? args[3].toLowerCase() : "traditional";
 
     if(!mode.equals("traditional") && !mode.equals("nio")){
       System.err.println("Usage: java Client <file> <original path> [traditional | nio]");
@@ -273,29 +273,13 @@ public class Client {
     long size = getFileSize(fileName);
     System.out.println("Size of "+fileName+" = "+size+" bytes");
 
-    /*
-    // testing file chunk
-    List<Range> ranges = calculateRange(size, WORKERS);
-    for (Range r : ranges){
-      System.out.println("Worker "+r.id+": offset="+r.offset+" length="+r.length+" (bytes "+ r.offset+" to "+(r.offset + r.length - 1) +")");
-    }
-    verifyRanges(ranges, size);
-    */
-
-    /*
-    String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
-    prepareOutputFile(outputPath, size);
-
-    // download the whole file = 1 range
-    Range whole = new Range(0, 0, size);
-    downloadRange(fileName, whole, outputPath);
-    System.out.println("Downloaded to " + outputPath);
-    */
 
     String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
     prepareOutputFile(outputPath, size);
 
-    List<Range> ranges = calculateRange(size,WORKERS);
+    int workers = args.length > 2 ? Integer.parseInt(args[2]) : WORKERS;
+
+    List<Range> ranges = calculateRange(size,workers);
     // for (Range r : ranges){
     //   System.out.println("Worker "+r.id+": offset="+r.offset+" length="+r.length+" (bytes "+ r.offset+" to "+(r.offset + r.length - 1) +")");
     // }
