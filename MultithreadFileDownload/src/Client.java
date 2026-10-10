@@ -132,6 +132,7 @@ public class Client {
   
   static void prepareOutputFile(String path, long size)throws IOException{
     File file = new File(path);
+    file.delete();
     file.getParentFile().mkdir();
     try(
       RandomAccessFile raf = new RandomAccessFile(file, "rw")
@@ -199,7 +200,7 @@ public class Client {
   }
 
   static void downloadParallel(String fileName, List<Range> ranges, String outputPath)throws Exception{
-    ExecutorService pool = Executors.newFixedThreadPool(WORKERS);
+    ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, ranges.size()));
     List<Future<?>> futures = new ArrayList<>();
 
     for(Range r : ranges){
@@ -284,7 +285,7 @@ public class Client {
     System.out.println("Size of "+fileName+" = "+size+" bytes");
 
 
-    String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
+    String outputPath = "../../File_Container/test1_down/downdloaded_" + fileName;
     prepareOutputFile(outputPath, size);
 
     int workers = WORKERS;
