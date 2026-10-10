@@ -247,7 +247,7 @@ public class Client {
     System.out.println("Size check: " + (actual == expectatedSize ? "OK" : "MISMATCH ("+actual+")"));
 
     String hash = sha256(outputPath);
-    System.out.println("SHA-256 of download: "+hash);
+    // System.out.println("SHA-256 of download: "+hash);
 
     if(originalPath != null){
       String original = sha256(originalPath);
@@ -257,6 +257,8 @@ public class Client {
   }
 
   public static void main(String[] args)throws IOException {
+    
+    
 
     // ask for file only
     if(args.length == 0 || args[0].equalsIgnoreCase("LIST")){
