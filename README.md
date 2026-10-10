@@ -153,7 +153,6 @@ Hash check: OK (identical to original)
 What each part means:
 
 - **File list:** shown only by java Client LIST, as the reply to LIST with exact sizes in bytes.
-- **Ranges verified:** the client checked that the ranges have no gaps and no overlaps and add up to the file size.
 - **Worker N finished:** workers finish in a different order every run. That is normal, because each one writes into its own region of the file.
 - **Downloaded in ...:** time covers only the download. The hash check runs afterwards and is not included.
 - **Size check / Hash check:** the size check alone is weak (the output file is created at full size before the download starts). **A run only counts if the hash check says OK.**
