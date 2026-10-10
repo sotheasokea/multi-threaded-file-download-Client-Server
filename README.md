@@ -1,6 +1,6 @@
 # Multi-threaded File Download (Client/Server)
 
-A TCP client and server that download a file in **10 parts at the same time**. Each part is requested by its own worker thread over its own connection, and written straight into the final file at the correct position. The project supports two ways of moving bytes, so they can be compared:
+A TCP client and server that download a file in 10 parts at the same time by default (the number of workers can be changed). Each part is requested by its own worker thread over its own connection, and written straight into the final file at the correct position. The project supports two ways of moving bytes, so they can be compared:
 
 | Mode | How bytes move |
 |---|---|
@@ -82,57 +82,77 @@ Server listening on port 5050
 ### Terminal 2: the client
 
 ```
-java Client <file> <original path> [traditional | nio] [workers]
+java Client LIST
+java Client <file> [workers] [traditional | nio] [original path]
 ```
 
 | Argument | Meaning | Default |
 |---|---|---|
-| `<file>` | Name of a file in the server's shared folder | `test.txt` |
-| `<original path>` | Path to the original file, used only to compare hashes | none (hash is printed but not compared) |
-| `[mode]` | `traditional` or `nio` | `traditional` |
+| `LIST` | Shows the files on the server and exits, with no download |  |
+| `<file>` | Name of a file in the server's shared folder | |
 | `[workers]` | Number of workers | 10 |
+| `[mode]` | `traditional` or `nio` | `traditional` |
+| `<original path>` | Path to the original file, used only to compare hashes | none (hash is printed but not compared) |
 
-The arguments are positional. To choose a mode you must also give the original path, and to set the worker count you must also give the mode (for example `traditional 1`).
+
+
+The arguments are positional. To choose a mode you must also give the worker count, and to give the original path you must give the worker count and the mode too (for example `10 nio <path>`). Running `java Client` with no arguments does the same as `java Client list`.
 
 ### Examples
 
 ```
+# list the files on the server (no download)
+java Client list
+
 # 10 workers, traditional (default)
-java Client BigFile.zip ../../File_Container/shared/BigFile.zip
+java Client BigFile.zip
 
 # 1 worker, traditional
-java Client BigFile.zip ../../File_Container/shared/BigFile.zip traditional 1
+java Client BigFile.zip 1
 
-# 10 workers, NIO (workers defaults to 10)
-java Client BigFile.zip ../../File_Container/shared/BigFile.zip nio
+# 10 workers, NIO
+java Client BigFile.zip 10 nio
 
 # 1 worker, NIO
-java Client BigFile.zip ../../File_Container/shared/BigFile.zip nio 1
+java Client BigFile.zip 1 nio
+
+# 10 workers, NIO, and compare the hash with the original
+java Client BigFile.zip 10 nio ../../File_Container/shared/BigFile.zip
 ```
 
-**Important:** start the server and the client in the **same mode**. Mixed combinations still work (the protocol is identical), but they do not measure either path properly.
+**Important:** 
+>start the server and the client in the **same mode**. Mixed combinations still work (the protocol is identical), but they do not measure either path properly.
+>**To use NIO you must give the worker count first** (`10 nio`, not just `nio`). The word in the worker position is read as a number, so a mode typed there is not used as the mode.
 
 ### Example client output
 
 ```
-Mode: traditional
+java Client list
+
+FILE list:
 BigFile.zip (856817495 bytes)
+Big_2_Test.zip (2524242124 bytes)
 examples_of_os.png (16466 bytes)
 test.txt (976 bytes)
-Size of BigFile.zip = 856817495 bytes
-Ranges verified: no gaps, no overlaps, total = 856817495
+```
+```
+java Client test.txt 5 nio ../../File_Container/shared/test.txt
+
+Mode: nio
+Size of test.txt = 976 bytes
+Worker 4 finished!
+Worker 2 finished!
+Worker 1 finished!
 Worker 3 finished!
-Worker 9 finished!
-...
-Downloaded in 0.804 s (1016.43 MB/s)
+Worker 0 finished!
+Downloaded in 0.013 s (0.07 MB/s)
 Size check: OK
-SHA-256 of download: dccd3366...c1e6
 Hash check: OK (identical to original)
 ```
 
 What each part means:
 
-- **File list:** the reply to `LIST`, with exact sizes in bytes.
+- **File list:** shown only by java Client LIST, as the reply to LIST with exact sizes in bytes.
 - **Ranges verified:** the client checked that the ranges have no gaps and no overlaps and add up to the file size.
 - **Worker N finished:** workers finish in a different order every run. That is normal, because each one writes into its own region of the file.
 - **Downloaded in ...:** time covers only the download. The hash check runs afterwards and is not included.
@@ -239,7 +259,7 @@ Tips for fair results:
 | `Download failed: ... Server respond: ERROR ...` | The server rejected a request. The message says why (bad range, file not found) |
 | Large file (over 2 GB) fails with 1 worker | `length` must be a `long` on the server, not an `int` |
 | Server stops answering new clients | Its thread pool is full of idle connections (for example from a test left open). Close the test client or restart the server |
-| Usage message appears, or `NumberFormatException` at start | Arguments are in the wrong order. Remember: file, original path, mode, workers. A number in the mode position (for example `... BigFile.zip 1`) is rejected as an unknown mode |
+| Ran with `nio` need to specify `workers` positionally| The mode was typed in the worker-count position (for example `java Client BigFile.zip nio`). Put the worker count first: `java Client BigFile.zip 10 nio` |
 | Output file exists with the right size but is wrong | A failed run leaves a zero-filled file. Only a passing hash check proves a download worked |
 
 ---
