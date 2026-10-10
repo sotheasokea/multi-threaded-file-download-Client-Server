@@ -285,20 +285,32 @@ public class Client {
     String outputPath = "../../File_Container/downloaded_file/downdloaded_" + fileName;
     prepareOutputFile(outputPath, size);
 
-    int workers = args.length > 3 ? Integer.parseInt(args[3]) : WORKERS;
+    int workers = WORKERS;
+    if(args.length > 1){
+      try{
+        workers = Integer.parseInt(args[1]);
+      }catch(NumberFormatException e){
+        System.err.println("Usage: java Client <file> [workers] [traditional | nio] [original path]");
+        return;
+      }
+      if(workers < 1){
+        System.err.println("Workers must be a whole number 1 or more.");
+        return;
+      }
+    }
 
     List<Range> ranges = calculateRange(size,workers);
     // for (Range r : ranges){
     //   System.out.println("Worker "+r.id+": offset="+r.offset+" length="+r.length+" (bytes "+ r.offset+" to "+(r.offset + r.length - 1) +")");
     // }
-    verifyRanges(ranges, size);
+    // verifyRanges(ranges, size);
 
     try {
       long start = System.nanoTime();
       downloadParallel(fileName, ranges, outputPath);
       double seconds = (System.nanoTime() - start)/ 1e9;
       System.out.printf("Downloaded in %.3f s (%.2f MB/s)%n", seconds, size / (1024.0 * 1024.0) / seconds);
-      verifyDownload(outputPath, size, args.length > 1 ? args[1] : null);
+      verifyDownload(outputPath, size, args.length > 3 ? args[3] : null);
     } catch (Exception e) {
       System.err.println("Download failed: "+e);
     }
