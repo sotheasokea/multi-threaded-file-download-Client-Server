@@ -258,6 +258,14 @@ public class Client {
 
   public static void main(String[] args)throws IOException {
 
+    // ask for file only
+    if(args.length == 0 || args[0].equalsIgnoreCase("LIST")){
+      System.out.println("FILE list: ");
+      askForFileList();
+      return;
+    }
+
+
     String fileName = args.length > 0 ? args[0] : "test.txt";
 
     mode = args.length > 2 ? args[2].toLowerCase() : "traditional";
@@ -268,7 +276,7 @@ public class Client {
     }
     System.out.println("Mode: "+mode);
 
-    askForFileList();
+    // askForFileList();
 
     long size = getFileSize(fileName);
     System.out.println("Size of "+fileName+" = "+size+" bytes");
