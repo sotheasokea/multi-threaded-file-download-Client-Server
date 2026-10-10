@@ -214,20 +214,32 @@ It sends `LIST`, `INFO test.txt` and several `GET` requests (including invalid o
 
 For each combination, run **at least 3 times** and record the time, throughput, and whether the hash check passed.
 
-| Mode | Workers | Run | Time (s) | MB/s | Hash OK? |
+| Mode - server/client | Workers | Run | Time (s) | MB/s | Hash OK? |
 |---|---|---|---|---|---|
-| traditional | 1 | 1 | | | |
-| traditional | 1 | 2 | | | |
-| traditional | 1 | 3 | | | |
-| traditional | 10 | 1 | | | |
-| traditional | 10 | 2 | | | |
-| traditional | 10 | 3 | | | |
-| nio | 1 | 1 | | | |
-| nio | 1 | 2 | | | |
-| nio | 1 | 3 | | | |
-| nio | 10 | 1 | | | |
-| nio | 10 | 2 | | | |
-| nio | 10 | 3 | | | |
+| traditional/traditional | 1 | 1 | | | |
+| traditional/traditional | 1 | 2 | | | |
+| traditional/traditional | 1 | 3 | | | |
+| traditional/traditional | 10 | 1 | | | |
+| traditional/traditional | 10 | 2 | | | |
+| traditional/traditional | 10 | 3 | | | |
+| traditional/nio | 1 | 1 | | | |
+| traditional/nio | 1 | 2 | | | |
+| traditional/nio | 1 | 3 | | | |
+| traditional/nio | 10 | 1 | | | |
+| traditional/nio | 10 | 2 | | | |
+| traditional/nio | 10 | 3 | | | |
+| nio/traditional | 1 | 1 | | | |
+| nio/traditional | 1 | 2 | | | |
+| nio/traditional | 1 | 3 | | | |
+| nio/traditional | 10 | 1 | | | |
+| nio/traditional | 10 | 2 | | | |
+| nio/traditional | 10 | 3 | | | |
+| nio/nio | 1 | 1 | | | |
+| nio/nio | 1 | 2 | | | |
+| nio/nio | 1 | 3 | | | |
+| nio/nio | 10 | 1 | | | |
+| nio/nio | 10 | 2 | | | |
+| nio/nio | 10 | 3 | | | |
 
 Tips for fair results:
 
@@ -275,3 +287,108 @@ Large test files take real disk space, so delete old downloads between experimen
 
 - The server has no password. While it runs, anyone who can reach port 5050 can list and download everything in the shared folder.
 - The client connects to `localhost`. To use another computer, change the `HOST` constant in `Client.java` to the server's IP address and allow port 5050 through the firewall.
+
+---
+
+## 12. Experiment Results and Summary
+
+### Setup
+
+- **File:** `BigFile.zip`, 856,817,495 bytes (about 817 MB)
+- **Cases:** 4 server/client mode combinations × 2 worker counts (1 and 10) × 3 runs = 24 runs
+- **Environment:** everything ran on one computer through `localhost`. *(Fill in: CPU, RAM, disk type, operating system, Java version.)*
+- **Check:** every run ended with `Hash check: OK`, so every time below is for a correct download.
+- **Throughput:** `size / 1,048,576 / seconds` (1 MB = 1,048,576 bytes).
+
+The first and last rows (traditional/traditional and nio/nio) are the two main comparisons required by the assignment. The two mixed rows are an extra experiment.
+
+### Results (each run)
+| Mode - server/client | Workers | Run | Time (s) | MB/s | Hash OK? |
+|---|---|---|---|---|---|
+| traditional/traditional | 1 | 1 | 2.197 | 371.89 | OK |
+| traditional/traditional | 1 | 2 | 1.543 | 529.62 | OK |
+| traditional/traditional | 1 | 3 | 1.682 | 485.71 | OK |
+| traditional/traditional | 10 | 1 | 1.226 | 666.55 | OK |
+| traditional/traditional | 10 | 2 | 1.362 | 599.98 | OK |
+| traditional/traditional | 10 | 3 | 1.127 | 725.04 | OK |
+| traditional/nio | 1 | 1 | 1.998 | 409.03 | OK |
+| traditional/nio | 1 | 2 | 2.130 | 383.59 | OK |
+| traditional/nio | 1 | 3 | 2.146 | 380.69 | OK |
+| traditional/nio | 10 | 1 | 1.289 | 634.16 | OK |
+| traditional/nio | 10 | 2 | 1.191 | 685.86 | OK |
+| traditional/nio | 10 | 3 | 1.255 | 650.85 | OK |
+| nio/traditional | 1 | 1 | 2.035 | 401.50 | OK |
+| nio/traditional | 1 | 2 | 1.462 | 558.74 | OK |
+| nio/traditional | 1 | 3 | 1.538 | 531.17 | OK |
+| nio/traditional | 10 | 1 | 6.069 | 134.64 | OK |
+| nio/traditional | 10 | 2 | 1.144 | 713.99 | OK |
+| nio/traditional | 10 | 3 | 1.276 | 640.14 | OK |
+| nio/nio | 1 | 1 | 2.027 | 403.08 | OK |
+| nio/nio | 1 | 2 | 1.966 | 415.72 | OK |
+| nio/nio | 1 | 3 | 2.312 | 353.44 | OK |
+| nio/nio | 10 | 1 | 1.122 | 728.33 | OK |
+| nio/nio | 10 | 2 | 1.249 | 654.22 | OK |
+| nio/nio | 10 | 3 | 1.089 | 750.58| OK |
+### Results (summary)
+
+| Server / Client | Workers | Avg time (s) | Median time (s) | Time range (s) | Avg MB/s |
+|---|---|---|---|---|---|
+| traditional / traditional | 1 | 1.81 | 1.68 | 1.54 – 2.20 | 462 |
+| traditional / traditional | 10 | 1.24 | 1.23 | 1.13 – 1.36 | 664 |
+| traditional / nio | 1 | 2.09 | 2.13 | 2.00 – 2.15 | 391 |
+| traditional / nio | 10 | 1.25 | 1.26 | 1.19 – 1.29 | 657 |
+| nio / traditional | 1 | 1.68 | 1.54 | 1.46 – 2.04 | 497 |
+| nio / traditional | 10 | 2.83 | 1.28 | 1.14 – **6.07** | 496 |
+| nio / nio | 1 | 2.10 | 2.03 | 1.97 – 2.31 | 391 |
+| nio / nio | 10 | 1.15 | 1.12 | 1.09 – 1.25 | 711 |
+
+The `nio / traditional, 10 workers` average is pulled up by a single run of 6.07 s. Without it, the average of the other two runs is 1.21 s, so the median is the fairer number for that row.
+
+### What the results show
+
+1. **10 workers were faster than 1 worker in every combination** (comparing medians), but only by about **1.2x to 1.8x**, not 10x.
+   - traditional/traditional: 1.37x
+   - traditional/nio: 1.70x
+   - nio/traditional: 1.20x
+   - nio/nio: 1.81x
+2. **NIO did not clearly beat traditional I/O.** Comparing matching modes:
+   - With 10 workers, nio/nio had a median of 1.12 s against 1.23 s for traditional/traditional, about 8% faster. The time ranges overlap (1.09 – 1.25 s against 1.13 – 1.36 s), so this is within normal variation.
+   - With 1 worker, nio/nio was slower (median 2.03 s against 1.68 s, about 20% slower).
+3. **Mixed modes landed in between** and followed no clear pattern. Both runs where the client used NIO with 1 worker were around 2.0 to 2.3 s, which hints that receiving with `transferFrom` gave no benefit here. With only 3 runs per row, this is a hint, not a conclusion.
+4. **Run-to-run variation was large.** Runs with the same settings differed by up to about 40% (traditional/traditional, 1 worker: 1.54 to 2.20 s), and one run (nio/traditional, 10 workers, run 1) took 6.07 s, about five times longer than the other two runs in that group.
+
+### Why 10 workers are not 10 times faster
+
+- All workers share the same disk, CPU, memory and loopback path. Adding workers does not add capacity, it only splits the same resources.
+- The download ends when the **slowest** worker finishes, so one delayed range delays the whole run.
+- The server and the client run on the same machine, so their threads compete for the same cores.
+- Each extra worker adds costs of its own: a thread, a connection and a file handle.
+- Even one worker was already fast, because on `localhost` the data moves through memory, so there was little waiting time left for extra workers to overlap.
+
+### Why NIO did not win consistently
+
+- `transferTo` saves a copy by letting the operating system move data from the file to the socket. On one machine, with the file already in the page cache, there is little left to save.
+- The savings mostly apply to the sending side. On the receiving side, `transferFrom` from a socket may still go through an internal buffer. How much it helps depends on the JDK version and operating system, which was not tested separately.
+- The differences between the modes (about 10 to 20%) are the same size as the run-to-run variation, so they cannot be treated as real.
+
+### Likely causes of the inconsistent times
+
+These could not be confirmed from the data alone.
+
+- Each client run starts a new JVM, so the first runs in a group may be slower while Java warms up.
+- Each run writes an 817 MB file, and the operating system saves it to disk in the background, which can slow the next run.
+- Page cache changes: part of the source file may be pushed out of memory between runs.
+- Background programs, such as antivirus scanning of the new file, can use CPU or disk time.
+- Thread scheduling differs from run to run, especially with 10 workers sharing cores with the server's threads.
+
+### Limits of testing on localhost
+
+- **Loopback network:** data never leaves the computer, so speeds are far higher than on a real network, and the network is never the limit.
+- **Page cache:** reads may come from memory instead of the disk.
+- **Write caching:** the timer may stop before the data has actually reached the disk.
+- **Shared resources:** client and server compete for the same CPU and memory.
+- Only 3 runs were made per case, so the results show trends, not precise values.
+
+### Conclusion
+
+Downloading in 10 parts was consistently faster than using 1 worker, by about 1.2x to 1.8x, but the speedup was far below 10x because all workers share the same machine resources. NIO (`transferTo`/`transferFrom`) did not show a clear advantage over traditional I/O in this setup: its results were within the normal variation between runs. Both approaches produced correct files in all 24 runs.
